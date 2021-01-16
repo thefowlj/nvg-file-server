@@ -33,13 +33,27 @@ server.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'file-server.html'));
 });
 
+// GET list of files
+server.get('/api/files', (req, res) => {
+  let output = { route: 'api/file/'};
+  fs.readdir(FILE_DIR, (err, files) => {
+    output.files = files;
+    res.json(output);
+  });
+});
+
+// GET specific file
+server.get('/api/file/:filename', (req, res) => {
+  res.sendFile(FILE_DIR + req.params.filename, { root : '.' });
+});
+
 // POST file for upload
 server.post('/api/upload', (req, res) => {
   const form = formidable({ maxFileSize: MAX_FILE_SIZE });
   form.parse(req, (err, fields, files) => {
     fs.rename(files.filetoupload.path, FILE_DIR + files.filetoupload.name, (err) => {
       if (err) throw err;
-      res.sendStatus(200);
+      res.redirect('/');
     });
   });
 });
