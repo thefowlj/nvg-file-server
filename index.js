@@ -35,7 +35,7 @@ server.get('/', (req, res) => {
 
 // GET list of files
 server.get('/api/files', (req, res) => {
-  let output = { route: 'api/file/'};
+  let output = { route: 'api/file/', delete: 'api/file/delete/'};
   fs.readdir(FILE_DIR, (err, files) => {
     output.files = files;
     res.json(output);
@@ -44,7 +44,17 @@ server.get('/api/files', (req, res) => {
 
 // GET specific file
 server.get('/api/file/:filename', (req, res) => {
-  res.sendFile(FILE_DIR + req.params.filename, { root : '.' });
+  res.sendFile(FILE_DIR + req.params.filename, { root: '.' });
+});
+
+// GET request to delete specific file
+server.get('/api/file/delete/:filename', (req, res) => {
+  fs.unlink(FILE_DIR + req.params.filename, (err) => {
+    if(err) {
+      console.log(err);
+    }
+    res.redirect('/');
+  })
 });
 
 // POST file for upload

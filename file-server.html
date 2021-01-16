@@ -16,11 +16,19 @@ function init() {
 function createFileList() {
   if(fileData.files.length > 0) {
     $('body').prepend('<h1>Files</h1>')
+  } else {
+    $('body').prepend('<h2>No Files Available</h2>')
   }
   fileData.files.forEach((value) => {
-    $(TABLE_ELEMENT).append(`<tr><td><a href='${fileData.route}${value}'>${value}</a></td></tr>`)
+    $(TABLE_ELEMENT).append(
+      `<tr>
+      <td><a href='${fileData.route}${value}'>${value}</a></td>
+      <td><a href='${fileData.delete}${value}'><button type='button'>Remove</button></a></td>
+      </tr>`
+    );
   });
 }
+
 </script>
 <body onload="init()">
   <table>
