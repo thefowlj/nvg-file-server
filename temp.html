@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+const TABLE_ELEMENT = '#fTable';
+
+let fileData = null;
+
+function init() {
+  $.getJSON('api/temp/files', (data) => {
+    fileData = data;
+    createFileList();
+  });
+}
+
+function createFileList() {
+  if(fileData.files.length > 0) {
+    $('body').prepend('<h1>Temp File</h1>')
+  } else {
+    $('body').prepend('<h2>No File Available</h2>')
+  }
+  fileData.files.forEach((value) => {
+    $(TABLE_ELEMENT).append(
+      `<tr>
+      <td><a href='${fileData.route}${value}'>${value}</a></td>
+      </tr>`
+    );
+  });
+}
+</script>
+<body onload="init()">
+  <table>
+    <tbody id="fTable">
+    </tbody>
+  </table><br>
+  <h2>Upload</h2>
+  <form action="api/temp/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="filetoupload"><br>
+    <input type="submit">
+  </form>
+</body>
+</html>
