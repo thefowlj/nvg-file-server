@@ -68,7 +68,8 @@ server.get('/api/files', (req, res) => {
 
 // GET specific file
 server.get('/api/file/:filename', (req, res) => {
-  res.sendFile(FILE_DIR + req.params.filename, { root: '.' });
+  let root = FILE_DIR.charAt(0);
+  res.sendFile(FILE_DIR + req.params.filename, { root: root });
 });
 
 // GET request to delete specific file
@@ -110,7 +111,8 @@ server.get('/td', (req, res) => {
 
 // GET file in temp directory
 server.get('/api/temp/file/:filename', (req, res) => {
-  res.sendFile(TEMP_DIR + req.params.filename, { root: '.' });
+  let root = FILE_DIR.charAt(0);
+  res.sendFile(TEMP_DIR + req.params.filename, { root: root });
 });
 
 // GET list of temp files
