@@ -14,6 +14,7 @@ const server = express();
 const http = require('http').createServer(server);
 const io = require('socket.io')(http);
 const mv = require('mv');
+const os = require('os');
 
 require('dotenv').config();
 
@@ -31,10 +32,14 @@ const TEMP_DIR =
 const EMIT_WAIT =
   process.env.EMIT_WAIT != undefined ?
   process.env.EMIT_WAIT : 1000;
+const UPLOAD_DIR =
+  process.env.UPLOAD_DIR != undefined ?
+  process.env.UPLOAD_DIR : os.tmpdir();
 
 // Create storage directorIES if it does not exist on startup
 checkStorage(FILE_DIR);
 checkStorage(TEMP_DIR);
+checkStorage(UPLOAD_DIR);
 
 // Create directories at specific path
 function checkStorage(dir) {
@@ -136,7 +141,10 @@ server.post('/api/temp/upload', (req, res) => {
 // Add files posted in request to specified directory
 function addFile(req, res, dir, redirect, clientId) {
   redirect = redirect != undefined ? redirect : '/';
-  const form = formidable({ maxFileSize: MAX_FILE_SIZE });
+  const form = formidable({
+    maxFileSize: MAX_FILE_SIZE,
+    uploadDir: UPLOAD_DIR
+   });
   let start = Date.now();
   let output = { start: start, bytesReceived: 0, bytesExpected: 1 };
   const emitProgress = async function () {
@@ -166,9 +174,6 @@ io.on('connection', (socket) => {
 });
 
 // Listen for connections
-// server.listen(process.env.PORT, () => {
-//   console.log(`file servering listening on port ${process.env.PORT}`);
-// });
 http.listen(process.env.PORT, () => {
   console.log(`file servering listening on port ${process.env.PORT}`)
 });
