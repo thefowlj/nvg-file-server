@@ -15,24 +15,50 @@ function init() {
   });
 
   socket.on('uploadProgress', (progress) => {
-    let dT = Date.now() - progress.start;
-    let rate = (progress.bytesReceived / 1000000) / (dT / 1000);
-    let value = (progress.bytesReceived * 100) / progress.bytesExpected;
-    let rounded = Math.round(value * 10) / 10;
-    let fixed = rounded.toFixed(1) + '%';
+    let dT = Date.now() - progress.start; // [ms]
+    let dB = progress.bytesExpected - progress.bytesReceived; // [bytes]
+    let rate = (progress.bytesReceived) / dT;  // [bytes/s]
+    let value = (progress.bytesReceived * 100) / progress.bytesExpected; // %
+    let fixedValue = fixedRound(value) + '%';
+    let fixedRate = fixedRound(rate / 1000) + 'MB/s';
+    let fixedTransfered = fixedRound(progress.bytesReceived / 1000000) + 'MB';
+    let fixedRemaining = fixedRound(dB / 1000000) + 'MB';
+    let elapsedTime = timeStr(dT) + ' s';
+    let remainingTime = timeStr(dB / rate) + ' s';
     $('#progress').attr('value', value);
-    $('#pct').text(fixed);
+    $('#pct').text(fixedValue);
+    $('#rate').text(fixedRate);
+    $('#transfered').text(fixedTransfered);
+    $('#remaining').text(fixedRemaining);
+    $('#elapsedTime').text(elapsedTime);
+    $('#remainingTime').text(remainingTime);
+    console.log(value);
   });
 
   $('#submitButton').click(() => {
     console.log('submit');
-    $('body').append(`<br><progress id='progress' value='0' max='100'></progress> <span id='pct'></span>`);
+    $('body').append(`<br>
+      <progress id='progress' value='0' max='100'></progress> <span id='pct'></span><br>
+      Transfered: <span id='transfered'></span><br>
+      Remaining: <span id='remaining'></span><br>
+      Rate: <span id='rate'></span><br>
+      Elapsed Time: <span id='elapsedTime'></span><br>
+      Remaining Time: <spand id='remainingTime'</span>`);
   });
 
   $.getJSON('api/files', (data) => {
     fileData = data;
     createFileList();
   });
+}
+
+function timeStr(t) {
+  return Math.round(t / 1000);
+}
+
+function fixedRound(num) {
+  let rounded = Math.round(num * 10) / 10;
+  return rounded.toFixed(1);
 }
 
 function createFileList() {
