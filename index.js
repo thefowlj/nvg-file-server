@@ -13,7 +13,7 @@ const path = require('path');
 const server = express();
 const http = require('http').createServer(server);
 const io = require('socket.io')(http);
-const pDebounce = require('p-debounce');
+const mv = require('mv');
 
 require('dotenv').config();
 
@@ -154,7 +154,7 @@ function addFile(req, res, dir, redirect, clientId) {
     }
   });
   form.parse(req, (err, fields, files) => {
-    fs.rename(files.filetoupload.path, dir + files.filetoupload.name, (err) => {
+    mv(files.filetoupload.path, dir + files.filetoupload.name, (err) => {
       if (err) throw err;
       res.redirect(redirect);
     });
