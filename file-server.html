@@ -1,12 +1,34 @@
 <!DOCTYPE html>
 <html>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script>
 const TABLE_ELEMENT = '#fTable';
 
 let fileData = null;
 
 function init() {
+  let socket = io();
+  socket.on('connect', () => {
+    console.log(socket.id);
+    $('#uploadForm').attr('action', `api/upload?clientId=${socket.id}`);
+  });
+
+  socket.on('uploadProgress', (progress) => {
+    let dT = Date.now() - progress.start;
+    let rate = (progress.bytesReceived / 1000000) / (dT / 1000);
+    let value = (progress.bytesReceived * 100) / progress.bytesExpected;
+    let rounded = Math.round(value * 10) / 10;
+    let fixed = rounded.toFixed(1) + '%';
+    $('#progress').attr('value', value);
+    $('#pct').text(fixed);
+  });
+
+  $('#submitButton').click(() => {
+    console.log('submit');
+    $('body').append(`<br><progress id='progress' value='0' max='100'></progress> <span id='pct'></span>`);
+  });
+
   $.getJSON('api/files', (data) => {
     fileData = data;
     createFileList();
@@ -37,9 +59,9 @@ function createFileList() {
   </table><br>
   <br>
   <h2>Upload</h2>
-  <form action="api/upload" method="post" enctype="multipart/form-data">
+  <form id="uploadForm" action="api/upload" method="post" enctype="multipart/form-data">
     <input type="file" name="filetoupload"><br>
-    <input type="submit">
+    <input id="submitButton" type="submit">
   </form>
 </body>
 </html>

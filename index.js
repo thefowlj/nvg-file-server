@@ -9,16 +9,28 @@
 const express = require('express');
 const formidable = require('formidable');
 const fs = require('fs');
-const server = express();
 const path = require('path');
+const server = express();
+const http = require('http').createServer(server);
+const io = require('socket.io')(http);
+const pDebounce = require('p-debounce');
 
 require('dotenv').config();
 
 const FILE_SIZE_CONSTANT = 1024 * 1024;
-const MAX_FILE_SIZE_MB = 4096;
+const MAX_FILE_SIZE_MB =
+  process.env.MAX_FILE_SIZE != undefined ?
+  process.env.MAX_FILE_SIZE : 4096;
 const MAX_FILE_SIZE = FILE_SIZE_CONSTANT * MAX_FILE_SIZE_MB;
-const FILE_DIR = process.env.FILE_DIR;
-const TEMP_DIR = process.env.TEMP_DIR;
+const FILE_DIR =
+  process.env.FILE_DIR != undefined ?
+  process.env.FILE_DIR : './files/';
+const TEMP_DIR =
+  process.env.TEMP_DIR != undefined ?
+  process.env.TEMP_DIR : './temp/';
+const EMIT_WAIT =
+  process.env.EMIT_WAIT != undefined ?
+  process.env.EMIT_WAIT : 1000;
 
 // Create storage directorIES if it does not exist on startup
 checkStorage(FILE_DIR);
@@ -66,7 +78,8 @@ server.get('/api/file/delete/:filename', (req, res) => {
 
 // POST file for upload
 server.post('/api/upload', (req, res) => {
-  addFile(req, res, FILE_DIR, '/');
+  let id = req.query.clientId;
+  addFile(req, res, FILE_DIR, '/', id);
 });
 
 // GET temp upload html page
@@ -107,6 +120,7 @@ server.get('/api/temp/files', (req, res) => {
 // POST temp file for upload
 // removes previous temp file(s)
 server.post('/api/temp/upload', (req, res) => {
+  let id = req.query.clientId;
   fs.readdir(TEMP_DIR, (err, files) => {
     files.forEach((value) => {
       fs.unlink(TEMP_DIR + value, (err) => {
@@ -116,13 +130,29 @@ server.post('/api/temp/upload', (req, res) => {
       });
     });
   });
-  addFile(req, res, TEMP_DIR, '/temp');
+  addFile(req, res, TEMP_DIR, '/temp', id);
 });
 
 // Add files posted in request to specified directory
-function addFile(req, res, dir, redirect) {
+function addFile(req, res, dir, redirect, clientId) {
   redirect = redirect != undefined ? redirect : '/';
   const form = formidable({ maxFileSize: MAX_FILE_SIZE });
+  let start = Date.now();
+  let output = { start: start, bytesReceived: 0, bytesExpected: 1 };
+  const emitProgress = async function () {
+    let value = (output.bytesReceived * 100) / output.bytesExpected;
+    console.log(value);
+    io.to(clientId).emit('uploadProgress', output);
+    if (value != 100) { setTimeout(() => { emitProgress(); }, EMIT_WAIT); }
+  };
+  emitProgress();
+  form.on('progress', (bytesReceived, bytesExpected) => {
+    output.bytesReceived = bytesReceived;
+    output.bytesExpected = bytesExpected;
+    if (bytesReceived == bytesExpected) {
+      io.to(clientId).emit('uploadProgress', output);
+    }
+  });
   form.parse(req, (err, fields, files) => {
     fs.rename(files.filetoupload.path, dir + files.filetoupload.name, (err) => {
       if (err) throw err;
@@ -131,7 +161,14 @@ function addFile(req, res, dir, redirect) {
   });
 }
 
+io.on('connection', (socket) => {
+  console.log(socket.id);
+});
+
 // Listen for connections
-server.listen(process.env.PORT, () => {
-  console.log(`file servering listening on port ${process.env.PORT}`);
+// server.listen(process.env.PORT, () => {
+//   console.log(`file servering listening on port ${process.env.PORT}`);
+// });
+http.listen(process.env.PORT, () => {
+  console.log(`file servering listening on port ${process.env.PORT}`)
 });
