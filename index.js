@@ -21,22 +21,25 @@ require('dotenv').config();
 const FILE_SIZE_CONSTANT = 1024 * 1024;
 const MAX_FILE_SIZE_MB =
   process.env.MAX_FILE_SIZE != undefined ?
-  process.env.MAX_FILE_SIZE : 4096;
+    process.env.MAX_FILE_SIZE : 4096;
 const MAX_FILE_SIZE = FILE_SIZE_CONSTANT * MAX_FILE_SIZE_MB;
 const FILE_DIR =
   process.env.FILE_DIR != undefined ?
-  process.env.FILE_DIR : './files/';
+    process.env.FILE_DIR : './files/';
 const TEMP_DIR =
   process.env.TEMP_DIR != undefined ?
-  process.env.TEMP_DIR : './temp/';
+    process.env.TEMP_DIR : './temp/';
 const EMIT_WAIT =
   process.env.EMIT_WAIT != undefined ?
-  process.env.EMIT_WAIT : 1000;
+    process.env.EMIT_WAIT : 1000;
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR != undefined ?
-  process.env.UPLOAD_DIR : os.tmpdir();
+    process.env.UPLOAD_DIR : os.tmpdir();
+const PORT = 
+  process.env.PORT != undefined ?
+    process.env.PORT : 4002;
 
-// Create storage directorIES if it does not exist on startup
+// Create storage directories if it does not exist on startup
 checkStorage(FILE_DIR);
 checkStorage(TEMP_DIR);
 checkStorage(UPLOAD_DIR);
@@ -59,7 +62,7 @@ server.get('/', (req, res) => {
 
 // GET list of files
 server.get('/api/files', (req, res) => {
-  let output = { route: 'api/file/', delete: 'api/file/delete/'};
+  let output = { route: 'api/file/', delete: 'api/file/delete/' };
   fs.readdir(FILE_DIR, (err, files) => {
     output.files = files;
     res.json(output);
@@ -117,7 +120,7 @@ server.get('/api/temp/file/:filename', (req, res) => {
 
 // GET list of temp files
 server.get('/api/temp/files', (req, res) => {
-  let output = { route: 'api/temp/file/', delete: 'api/temp/clear/'};
+  let output = { route: 'api/temp/file/', delete: 'api/temp/clear/' };
   fs.readdir(TEMP_DIR, (err, files) => {
     output.files = files;
     res.json(output);
@@ -146,7 +149,7 @@ function addFile(req, res, dir, redirect, clientId) {
   const form = formidable({
     maxFileSize: MAX_FILE_SIZE,
     uploadDir: UPLOAD_DIR
-   });
+  });
   let start = Date.now();
   let output = { start: start, bytesReceived: 0, bytesExpected: 1 };
   const emitProgress = async function () {
@@ -176,6 +179,6 @@ io.on('connection', (socket) => {
 });
 
 // Listen for connections
-http.listen(process.env.PORT, () => {
-  console.log(`file servering listening on port ${process.env.PORT}`)
+http.listen(PORT, () => {
+  console.log(`file servering listening on port ${PORT}`)
 });

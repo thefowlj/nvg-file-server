@@ -2,82 +2,109 @@
 <html>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
+
+<style>
+  #dropZone {
+    border: 5px solid blue;
+    width: auto;
+    height: 500px;
+  }
+</style>
+
 <script>
-const TABLE_ELEMENT = '#fTable';
+  const TABLE_ELEMENT = '#fTable';
 
-let fileData = null;
+  let fileData = null;
 
-function init() {
-  let socket = io();
-  socket.on('connect', () => {
-    console.log(socket.id);
-    $('#uploadForm').attr('action', `api/upload?clientId=${socket.id}`);
-  });
+  function init() {
+    // preventing page from redirecting
+    $("html").on("dragover", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      $("h1").text("Drag here");
+    });
 
-  socket.on('uploadProgress', (progress) => {
-    let dT = Date.now() - progress.start; // [ms]
-    let dB = progress.bytesExpected - progress.bytesReceived; // [bytes]
-    let rate = (progress.bytesReceived) / dT;  // [bytes/s]
-    let value = (progress.bytesReceived * 100) / progress.bytesExpected; // %
-    let fixedValue = fixedRound(value) + '%';
-    let fixedRate = fixedRound(rate / 1000) + 'MB/s';
-    let fixedTransfered = fixedRound(progress.bytesReceived / 1000000) + 'MB';
-    let fixedRemaining = fixedRound(dB / 1000000) + 'MB';
-    let elapsedTime = timeStr(dT) + ' s';
-    let remainingTime = timeStr(dB / rate) + ' s';
-    $('#progress').attr('value', value);
-    $('#pct').text(fixedValue);
-    $('#rate').text(fixedRate);
-    $('#transfered').text(fixedTransfered);
-    $('#remaining').text(fixedRemaining);
-    $('#elapsedTime').text(elapsedTime);
-    $('#remainingTime').text(remainingTime);
-    console.log(value);
-  });
+    $("html").on("drop", function (e) { e.preventDefault(); e.stopPropagation(); });
 
-  $('#submitButton').click(() => {
-    console.log('submit');
-    $('body').append(`<br>
+    let socket = io();
+    socket.on('connect', () => {
+      console.log(socket.id);
+      $('#uploadForm').attr('action', `api/upload?clientId=${socket.id}`);
+    });
+
+    socket.on('uploadProgress', (progress) => {
+      let dT = Date.now() - progress.start; // [ms]
+      let dB = progress.bytesExpected - progress.bytesReceived; // [bytes]
+      let rate = (progress.bytesReceived) / dT;  // [bytes/s]
+      let value = (progress.bytesReceived * 100) / progress.bytesExpected; // %
+      let fixedValue = fixedRound(value) + '%';
+      let fixedRate = fixedRound(rate / 1000) + 'MB/s';
+      let fixedTransfered = fixedRound(progress.bytesReceived / 1000000) + 'MB';
+      let fixedRemaining = fixedRound(dB / 1000000) + 'MB';
+      let elapsedTime = timeStr(dT) + ' s';
+      let remainingTime = timeStr(dB / rate) + ' s';
+      $('#progress').attr('value', value);
+      $('#pct').text(fixedValue);
+      $('#rate').text(fixedRate);
+      $('#transfered').text(fixedTransfered);
+      $('#remaining').text(fixedRemaining);
+      $('#elapsedTime').text(elapsedTime);
+      $('#remainingTime').text(remainingTime);
+      console.log(value);
+    });
+
+    $('#submitButton').click(() => {
+      console.log('submit');
+      $('#stats').append(`<br>
       <progress id='progress' value='0' max='100'></progress> <span id='pct'></span><br>
       Transfered: <span id='transfered'></span><br>
       Remaining: <span id='remaining'></span><br>
       Rate: <span id='rate'></span><br>
       Elapsed Time: <span id='elapsedTime'></span><br>
       Remaining Time: <spand id='remainingTime'</span>`);
-  });
+    });
 
-  $.getJSON('api/files', (data) => {
-    fileData = data;
-    createFileList();
-  });
-}
-
-function timeStr(t) {
-  return Math.round(t / 1000);
-}
-
-function fixedRound(num) {
-  let rounded = Math.round(num * 10) / 10;
-  return rounded.toFixed(1);
-}
-
-function createFileList() {
-  if(fileData.files.length > 0) {
-    $('body').prepend('<h1>Files</h1>')
-  } else {
-    $('body').prepend('<h2>No Files Available</h2>')
+    $.getJSON('api/files', (data) => {
+      fileData = data;
+      createFileList();
+    });
   }
-  fileData.files.forEach((value) => {
-    $(TABLE_ELEMENT).append(
-      `<tr>
+
+  function timeStr(t) {
+    return Math.round(t / 1000);
+  }
+
+  function fixedRound(num) {
+    let rounded = Math.round(num * 10) / 10;
+    return rounded.toFixed(1);
+  }
+
+  function createFileList() {
+    if (fileData.files.length > 0) {
+      $('body').prepend('<h1>Files</h1>')
+    } else {
+      $('body').prepend('<h2>No Files Available</h2>')
+    }
+    fileData.files.forEach((value) => {
+      $(TABLE_ELEMENT).append(
+        `<tr>
       <td><a href='${fileData.route}${value}'>${value}</a></td>
       <td><a href='${fileData.delete}${value}'><button type='button'>Remove</button></a></td>
       </tr>`
-    );
-  });
-}
+      );
+    });
 
+    $('#dropZone').on('drop', (evt) => {
+      evt.stopPropagation();
+      evt.preventDefault();
+
+      let file = evt.originalEvent.dataTransfer.files;
+      console.log(file);
+      $("input[type='file']").prop('files', file);
+    });
+  }
 </script>
+
 <body onload="init()">
   <table>
     <tbody id="fTable">
@@ -89,5 +116,11 @@ function createFileList() {
     <input type="file" name="filetoupload"><br>
     <input id="submitButton" type="submit">
   </form>
+  <div id='stats'>
+  </div><br>
+  <div id="dropZone">
+    <p>Drag one or more files to this <i>drop zone</i>.</p>
+  </div>
 </body>
+
 </html>
